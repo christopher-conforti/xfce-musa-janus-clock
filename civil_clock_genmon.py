@@ -47,9 +47,9 @@ the hover tooltip. Both use Python str.format() with these tokens:
                     day's own element vowel -- see musa.bet/social.htm)
     {hemerit_short} "He Aquita"
     {hemerit_full}  "Aquita Hemerit"
-    {orit}          Orit as a decimal (see --precision)
-    {orit_short}    "Or N.NNNNN"
-    {orit_full}     "N.NNNNN Orit"
+    {orit}          Orit in Janus balanced-dozenal notation (see janus_notation.py)
+    {orit_short}    "Or <janus notation>"
+    {orit_full}     "<janus notation> Orit"
     {holiday}       holiday name (with day count if multi-day), or "" if
                     today isn't a holiday
     {month}         zodiac month name, or "" during a holiday
@@ -90,8 +90,12 @@ Philadelphia; pass your own coordinates for an accurate reading elsewhere.
 import argparse
 from datetime import datetime, timezone, timedelta
 
+from janus_notation import janus_notation
+
 EPOCH = datetime(2025, 12, 21, 15, 2, 51, 231129, tzinfo=timezone.utc)
 CHRONIT_SECONDS = 643391.816709006
+
+ORIT_SIG_DIGITS = 4
 
 DEFAULT_LAT = 39.9526
 DEFAULT_LON = -75.1652
@@ -273,7 +277,7 @@ def build_tokens(now, lat, lon, precision):
     dattit = int((now - EPOCH).days)
     orit = (now - EPOCH).total_seconds() / CHRONIT_SECONDS
 
-    orit_str = f"{orit:.{precision}f}"
+    orit_str = janus_notation(orit, sig_digits=ORIT_SIG_DIGITS)
 
     tokens = {
         "dattit": dattit,
@@ -354,7 +358,8 @@ def main():
     parser.add_argument("--lon", type=float, default=DEFAULT_LON,
                          help=f"longitude for Solit (default {DEFAULT_LON}, Philadelphia)")
     parser.add_argument("--precision", type=int, default=5,
-                         help="decimal places for Orit and Solit (default 5)")
+                         help="decimal places for Solit (default 5); Orit uses "
+                              f"Janus notation with {ORIT_SIG_DIGITS} significant digits")
     args = parser.parse_args()
 
     now = datetime.now(timezone.utc)
