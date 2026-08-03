@@ -36,12 +36,14 @@ boundaries themselves are.
 FORMAT STRINGS: --format controls the panel text, --tooltip-format controls
 the hover tooltip. Both use Python str.format() with these tokens:
 
-    {annit}         raw Annit integer, or ? if ephem is unavailable
-    {annit_short}   "An N" (the official abbreviation, per musa.bet)
-    {annit_full}    "N Annit"
-    {dattit}        raw Dattit integer (days since epoch)
-    {dattit_short}  "Da N"
-    {dattit_full}   "N Dattit"
+    {annit}         Annit in exact Janus balanced-dozenal notation, or ? if
+                    ephem is unavailable (see janus_notation.py)
+    {annit_short}   "An <janus notation>" (the official abbreviation, per
+                    musa.bet)
+    {annit_full}    "<janus notation> Annit"
+    {dattit}        Dattit (days since epoch) in exact Janus notation
+    {dattit_short}  "Da <janus notation>"
+    {dattit_full}   "<janus notation> Dattit"
     {hemerit}       raw Hemerit acronym, e.g. "Aquita" (month stem + week's
                     element vowel + weekday's consonant + this specific
                     day's own element vowel -- see musa.bet/social.htm)
@@ -65,9 +67,9 @@ the hover tooltip. Both use Python str.format() with these tokens:
     {date_label}    holiday name, or musa.bet's own spoken phrasing:
                     "Dayelementday, Weekday of Week of Month", e.g.
                     "Fireday, Aphrodite of Earthweek of Leo"
-    {solit}         signed Solit as a decimal (see --precision)
-    {solit_short}   "So+ N.NNNNN" or "So- N.NNNNN"
-    {solit_full}    "+N.NNNNN Solit" or "-N.NNNNN Solit"
+    {solit}         signed Solit in Janus balanced-dozenal notation
+    {solit_short}   "So+ <janus notation>" or "So- <janus notation>"
+    {solit_full}    "+<janus notation> Solit" or "-<janus notation> Solit"
 
 Short forms use the unit's official abbreviation (An, Da, He, Or, So) the
 way musa.bet itself writes them. Full forms spell the unit name out, with
@@ -90,12 +92,18 @@ Philadelphia; pass your own coordinates for an accurate reading elsewhere.
 import argparse
 from datetime import datetime, timezone, timedelta
 
-from janus_notation import janus_notation
+from janus_notation import janus_notation, janus_integer
 
 EPOCH = datetime(2025, 12, 21, 15, 2, 51, 231129, tzinfo=timezone.utc)
 CHRONIT_SECONDS = 643391.816709006
 
-ORIT_SIG_DIGITS = 4
+# Reduced from the module's own default of 4: at 4 sig digits, a
+# constantly-advancing fractional Chronit remainder makes the rule-of-six
+# carry (e.g. "3⑥.1③^1") the common case rather than the exception, which
+# is more precision than a glance-level clock display wants. Applies to
+# both continuous values Orit and Solit. See janus_clock_notation_spec.md's
+# rule-of-six carry window correction.
+CONTINUOUS_SIG_DIGITS = 2
 
 DEFAULT_LAT = 39.9526
 DEFAULT_LON = -75.1652
@@ -273,16 +281,17 @@ def solit_for(dt, lat, lon):
     return seconds / CHRONIT_SECONDS
 
 
-def build_tokens(now, lat, lon, precision):
+def build_tokens(now, lat, lon):
     dattit = int((now - EPOCH).days)
     orit = (now - EPOCH).total_seconds() / CHRONIT_SECONDS
 
-    orit_str = janus_notation(orit, sig_digits=ORIT_SIG_DIGITS)
+    dattit_str = janus_integer(dattit)
+    orit_str = janus_notation(orit, sig_digits=CONTINUOUS_SIG_DIGITS)
 
     tokens = {
-        "dattit": dattit,
-        "dattit_short": f"Da {dattit}",
-        "dattit_full": f"{dattit} Dattit",
+        "dattit": dattit_str,
+        "dattit_short": f"Da {dattit_str}",
+        "dattit_full": f"{dattit_str} Dattit",
         "orit": orit_str,
         "orit_short": f"Or {orit_str}",
         "orit_full": f"{orit_str} Orit",
@@ -306,9 +315,10 @@ def build_tokens(now, lat, lon, precision):
 
     if HAVE_EPHEM:
         info = hemerit_info(now)
-        tokens["annit"] = info["annit"]
-        tokens["annit_short"] = f"An {info['annit']}"
-        tokens["annit_full"] = f"{info['annit']} Annit"
+        annit_str = janus_integer(info["annit"])
+        tokens["annit"] = annit_str
+        tokens["annit_short"] = f"An {annit_str}"
+        tokens["annit_full"] = f"{annit_str} Annit"
         tokens["hemerit"] = info["hemerit"]
         tokens["hemerit_short"] = f"He {info['hemerit']}"
         tokens["hemerit_full"] = f"{info['hemerit']} Hemerit"
@@ -328,9 +338,10 @@ def build_tokens(now, lat, lon, precision):
 
         solit = solit_for(now, lat, lon)
         sign = "+" if solit >= 0 else "-"
-        solit_str = f"{sign}{abs(solit):.{precision}f}"
+        solit_janus = janus_notation(abs(solit), sig_digits=CONTINUOUS_SIG_DIGITS)
+        solit_str = f"{sign}{solit_janus}"
         tokens["solit"] = solit_str
-        tokens["solit_short"] = f"So{sign} {abs(solit):.{precision}f}"
+        tokens["solit_short"] = f"So{sign} {solit_janus}"
         tokens["solit_full"] = f"{solit_str} Solit"
 
     return tokens
@@ -357,13 +368,10 @@ def main():
                          help=f"latitude for Solit (default {DEFAULT_LAT}, Philadelphia)")
     parser.add_argument("--lon", type=float, default=DEFAULT_LON,
                          help=f"longitude for Solit (default {DEFAULT_LON}, Philadelphia)")
-    parser.add_argument("--precision", type=int, default=5,
-                         help="decimal places for Solit (default 5); Orit uses "
-                              f"Janus notation with {ORIT_SIG_DIGITS} significant digits")
     args = parser.parse_args()
 
     now = datetime.now(timezone.utc)
-    tokens = build_tokens(now, args.lat, args.lon, args.precision)
+    tokens = build_tokens(now, args.lat, args.lon)
 
     label = render(args.format, tokens)
     tooltip_text = render(args.tooltip_format, tokens)
