@@ -97,12 +97,12 @@ from janus_notation import janus_notation, janus_integer
 EPOCH = datetime(2025, 12, 21, 15, 2, 51, 231129, tzinfo=timezone.utc)
 CHRONIT_SECONDS = 643391.816709006
 
-# Reduced from the module's own default of 4: at 4 sig digits, a
-# constantly-advancing fractional Chronit remainder makes the rule-of-six
-# carry (e.g. "3⑥.1③^1") the common case rather than the exception, which
-# is more precision than a glance-level clock display wants. Applies to
-# both continuous values Orit and Solit. See janus_clock_notation_spec.md's
-# rule-of-six carry window correction.
+# The module's own default of 6 significant digits matches the temporal
+# dashboard's precision need (it updates every 0.000001 Chronit), not a
+# display convenience -- an Xfce panel only wants whole-Orit-level glance
+# resolution, so it must pass a lower sig_digits explicitly rather than
+# rely on the module default. Applies to both continuous values Orit and
+# Solit. See janus_clock_notation_spec.md's "Format changes" section.
 CONTINUOUS_SIG_DIGITS = 2
 
 DEFAULT_LAT = 39.9526
