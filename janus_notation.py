@@ -73,18 +73,23 @@ def _carry_to_balanced(raw_digits):
 
 def to_balanced_dozenal_integer_digits(n):
     """
-    Convert a non-negative integer to its EXACT balanced-dozenal digit
-    representation -- no truncation, no significant-digit budget.
-    Returns a list of digits (-6..6), most significant first, with no
-    leading zero (except the single digit [0] for n == 0).
+    Convert any integer (positive, negative, or zero) to its EXACT
+    balanced-dozenal digit representation -- no truncation, no
+    significant-digit budget, and no ASCII sign character. True Janus
+    notation has no separate sign marker at all: a negative value is
+    expressed purely by negating its balanced digits (each one still
+    within -6..6), the same digit alphabet used for everything else.
+    This works because balanced-dozenal representation is linear -- if
+    digits d_i represent n, then -d_i represent -n exactly, carries and
+    all. Returns a list of digits (-6..6), most significant first, with
+    no leading zero (except the single digit [0] for n == 0).
     """
-    if n < 0:
-        raise ValueError("expects a non-negative integer; handle sign separately")
     if n == 0:
         return [0]
 
+    negative = n < 0
     raw_digits = []
-    m = n
+    m = abs(n)
     while m > 0:
         raw_digits.append(m % 12)
         m //= 12
@@ -96,21 +101,24 @@ def to_balanced_dozenal_integer_digits(n):
     while len(raw_digits) > 1 and raw_digits[0] == 0:
         raw_digits.pop(0)
 
+    if negative:
+        raw_digits = [-d for d in raw_digits]
+
     return raw_digits
 
 def janus_integer(n):
     """
     Render a whole number (Annit, Dattit, or any other plain count) as
     exact Janus balanced-dozenal digits -- circled numerals for the
-    negative half, no magnitude notation at all, since a count has no
-    fractional part and no need for the scale-signaling machinery
-    magnitude notation exists to provide. E.g. janus_integer(19) -> '2⑤'.
-    Verified digit-for-digit against jalibrary.js's janusInt() for
-    9, 18, 19, 30, 73.
+    negative half, no ASCII sign character and no magnitude notation at
+    all, since a count has no fractional part and no need for the
+    scale-signaling machinery magnitude notation exists to provide. Sign
+    is carried entirely by the digits: e.g. janus_integer(19) -> '2⑤',
+    janus_integer(-2) -> '②' (not '-2'). Verified digit-for-digit
+    against jalibrary.js's janusInt() for 9, 18, 19, 30, 73.
     """
-    sign = "-" if n < 0 else ""
-    digits = to_balanced_dozenal_integer_digits(abs(n))
-    return sign + "".join(render_digit(d) for d in digits)
+    digits = to_balanced_dozenal_integer_digits(n)
+    return "".join(render_digit(d) for d in digits)
 
 def to_balanced_dozenal_mantissa_digits(value, sig_digits):
     """
@@ -200,12 +208,18 @@ def janus_notation(value, sig_digits=6, trim_trailing_zeros=False):
     only trims in its own "auto" mode (an unspecified/zero place count,
     meaning "up to 6, but don't pad"); pass trim_trailing_zeros=True to
     get that same compact behavior explicitly.
+
+    No ASCII sign character appears anywhere in the output -- neither for
+    a negative overall value nor for a negative magnitude. Balanced
+    dozenal has no separate sign marker; a negative value is expressed
+    by negating its balanced digits (mantissa or magnitude alike), the
+    same way janus_integer() handles a negative integer.
     """
-    sign = "-" if value < 0 else ""
+    is_negative = value < 0
     value = abs(value)
 
     if value == 0:
-        return "0*" + "0" * sig_digits
+        return janus_integer(0) + "*" + "0" * sig_digits
 
     digits, magnitude = to_balanced_dozenal_mantissa_digits(value, sig_digits)
 
@@ -213,10 +227,13 @@ def janus_notation(value, sig_digits=6, trim_trailing_zeros=False):
         while len(digits) > 1 and digits[-1] == 0:
             digits = digits[:-1]
 
+    if is_negative:
+        digits = [-d for d in digits]
+
     mantissa_str = "".join(render_digit(d) for d in digits)
     magnitude_str = janus_integer(magnitude)
 
-    return f"{sign}{magnitude_str}*{mantissa_str}"
+    return f"{magnitude_str}*{mantissa_str}"
 
 if __name__ == "__main__":
     print("Whole-count values (exact digits, no magnitude notation):")

@@ -398,3 +398,32 @@ directly (attached alongside this spec) by running its own `janusReal()`
 and `janusInt()` functions under Node and comparing output digit-by-digit
 against this module's Python output, not by re-deriving the convention
 from the numbers page alone.
+
+## Third correction: no ASCII sign character anywhere
+
+The prior revision still prepended an ASCII `-` for a negative overall
+value (`janus_notation()`) and for a negative magnitude specifically
+(`janus_integer()`, used both for whole counts and for rendering the
+magnitude inside `janus_notation()`'s output). That was wrong: balanced
+dozenal has no separate sign marker at all. Sign is carried entirely by
+the digits themselves -- a negative value is expressed by negating its
+balanced digits (each still within -6..6, using the same circled-digit
+alphabet as everything else), not by an external `-` prefix. This falls
+directly out of balanced-dozenal representation being linear: if digits
+`d_i` represent `n`, then `-d_i` represent `-n` exactly, carries and all.
+
+**Concrete symptom this fixes:** a small Solit reading (magnitude -2)
+previously rendered as `-2*41`, mixing an ASCII minus with Janus digits
+in the same token. It now renders as `②*41` -- the magnitude's sign is
+just its balanced digit being circled, exactly like any other negative
+digit in this notation. Likewise `janus_integer(-2)` now returns `②`,
+not `-2`, and `janus_notation(0.0006)` now returns `③*1054⑤1`, not
+`-3*1054⑤1`.
+
+Both `to_balanced_dozenal_integer_digits()` and `janus_notation()` were
+updated: the integer path negates its resolved balanced digits when the
+input was negative (after the rule-of-six carry logic runs on the
+positive magnitude, so the carry decision itself is unaffected), and the
+mantissa path does the same to its windowed digit list before rendering.
+`janus_integer()` and `janus_notation()` no longer have any code path
+that emits an ASCII `-`.
