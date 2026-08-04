@@ -67,9 +67,11 @@ the hover tooltip. Both use Python str.format() with these tokens:
     {date_label}    holiday name, or musa.bet's own spoken phrasing:
                     "Dayelementday, Weekday of Week of Month", e.g.
                     "Fireday, Aphrodite of Earthweek of Leo"
-    {solit}         signed Solit in Janus balanced-dozenal notation
-    {solit_short}   "So+ <janus notation>" or "So- <janus notation>"
-    {solit_full}    "+<janus notation> Solit" or "-<janus notation> Solit"
+    {solit}         Solit in Janus balanced-dozenal notation (before/after
+                    solar noon is carried by the digits themselves, not
+                    a separate sign character)
+    {solit_short}   "So <janus notation>"
+    {solit_full}    "<janus notation> Solit"
 
 Short forms use the unit's official abbreviation (An, Da, He, Or, So) the
 way musa.bet itself writes them. Full forms spell the unit name out, with
@@ -337,11 +339,9 @@ def build_tokens(now, lat, lon):
             )
 
         solit = solit_for(now, lat, lon)
-        sign = "+" if solit >= 0 else "-"
-        solit_janus = janus_notation(abs(solit), sig_digits=CONTINUOUS_SIG_DIGITS)
-        solit_str = f"{sign}{solit_janus}"
+        solit_str = janus_notation(solit, sig_digits=CONTINUOUS_SIG_DIGITS)
         tokens["solit"] = solit_str
-        tokens["solit_short"] = f"So{sign} {solit_janus}"
+        tokens["solit_short"] = f"So {solit_str}"
         tokens["solit_full"] = f"{solit_str} Solit"
 
     return tokens
