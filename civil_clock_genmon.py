@@ -67,9 +67,10 @@ the hover tooltip. Both use Python str.format() with these tokens:
     {date_label}    holiday name, or musa.bet's own spoken phrasing:
                     "Dayelementday, Weekday of Week of Month", e.g.
                     "Fireday, Aphrodite of Earthweek of Leo"
-    {solit}         Solit in Janus balanced-dozenal notation (before/after
-                    solar noon is carried by the digits themselves, not
-                    a separate sign character)
+    {solit}         Solit as a 5-digit Janus mantissa pinned at magnitude
+                    ① (12⁻¹ place), no magnitude prefix -- sign is carried
+                    by the digits (negative in the morning, positive in the
+                    afternoon)
     {solit_short}   "So <janus notation>"
     {solit_full}    "<janus notation> Solit"
 
@@ -94,7 +95,7 @@ Philadelphia; pass your own coordinates for an accurate reading elsewhere.
 import argparse
 from datetime import datetime, timezone, timedelta
 
-from janus_notation import janus_notation, janus_integer
+from janus_notation import janus_notation, janus_integer, janus_mantissa_fixed
 
 EPOCH = datetime(2025, 12, 21, 15, 2, 51, 231129, tzinfo=timezone.utc)
 CHRONIT_SECONDS = 643391.816709006
@@ -103,8 +104,8 @@ CHRONIT_SECONDS = 643391.816709006
 # dashboard's precision need (it updates every 0.000001 Chronit), not a
 # display convenience -- an Xfce panel only wants whole-Orit-level glance
 # resolution, so it must pass a lower sig_digits explicitly rather than
-# rely on the module default. Applies to both continuous values Orit and
-# Solit. See janus_clock_notation_spec.md's "Format changes" section.
+# rely on the module default. Applies to Orit. Solit uses janus_mantissa_fixed
+# instead (magnitude pinned at ①, 5 digits). See janus_clock_notation_spec.md.
 CONTINUOUS_SIG_DIGITS = 2
 
 DEFAULT_LAT = 39.9526
@@ -339,7 +340,7 @@ def build_tokens(now, lat, lon):
             )
 
         solit = solit_for(now, lat, lon)
-        solit_str = janus_notation(solit, sig_digits=CONTINUOUS_SIG_DIGITS)
+        solit_str = janus_mantissa_fixed(solit, fixed_magnitude=-1, sig_digits=5)
         tokens["solit"] = solit_str
         tokens["solit_short"] = f"So {solit_str}"
         tokens["solit_full"] = f"{solit_str} Solit"

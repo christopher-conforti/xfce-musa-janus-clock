@@ -175,6 +175,51 @@ def to_balanced_dozenal_mantissa_digits(value, sig_digits):
 
     return digits, magnitude
 
+def janus_mantissa_fixed(value, fixed_magnitude, sig_digits):
+    """
+    Render a real number as Janus mantissa digits only, pinned to a
+    specific magnitude, with no magnitude prefix or '*' separator.
+
+    Use when the display always wants the same magnitude scale regardless
+    of the actual value -- e.g. Solit pinned at magnitude ① (12⁻¹),
+    5 digits, so the readout is consistent from morning through noon to
+    evening without the magnitude prefix flickering. Sign is carried by
+    the digits (negative value → negated mantissa), same as
+    janus_notation().
+    """
+    is_negative = value < 0
+    value = abs(value)
+
+    scale_pow = fixed_magnitude - sig_digits + 1
+    scaled = round(value / (12.0 ** scale_pow))
+
+    if scaled == 0:
+        digits = [0] * sig_digits
+    else:
+        raw_digits = []
+        n = int(scaled)
+        while n > 0:
+            raw_digits.append(n % 12)
+            n //= 12
+        raw_digits.reverse()
+        raw_digits = [0] + raw_digits
+        _carry_to_balanced(raw_digits)
+        balanced = raw_digits
+
+        first_nonzero = 0
+        while first_nonzero < len(balanced) - 1 and balanced[first_nonzero] == 0:
+            first_nonzero += 1
+        balanced = balanced[first_nonzero:]
+
+        digits = balanced[:sig_digits]
+        while len(digits) < sig_digits:
+            digits.append(0)
+
+    if is_negative:
+        digits = [-d for d in digits]
+
+    return "".join(render_digit(d) for d in digits)
+
 def janus_notation(value, sig_digits=6, trim_trailing_zeros=False):
     """
     Render a real number in full Janus magnitude notation: MAGNITUDE
