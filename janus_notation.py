@@ -206,14 +206,15 @@ def janus_mantissa_fixed(value, fixed_magnitude, sig_digits):
         _carry_to_balanced(raw_digits)
         balanced = raw_digits
 
-        first_nonzero = 0
-        while first_nonzero < len(balanced) - 1 and balanced[first_nonzero] == 0:
-            first_nonzero += 1
-        balanced = balanced[first_nonzero:]
-
-        digits = balanced[:sig_digits]
+        # No leading-zero trim here -- this is fixed-point, not floating-point normalization.
+        # The whole point is to stay at the fixed scale implied by fixed_magnitude, rather than
+        # renormalizing to the true leading digit. Take the last sig_digits elements (least
+        # significant), and pad from the front with zeros if the array is shorter.
+        # Matches janusNotationFixedMagnitude() in index.html exactly:
+        #   rawDigits.slice(-sigDigits) + unshift(0) padding.
+        digits = balanced[-sig_digits:]
         while len(digits) < sig_digits:
-            digits.append(0)
+            digits.insert(0, 0)
 
     if is_negative:
         digits = [-d for d in digits]
