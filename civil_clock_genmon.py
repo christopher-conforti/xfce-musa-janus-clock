@@ -8,9 +8,11 @@ calendar day), Solit (time since true local solar noon), and Orit (raw
 elapsed Chronits, available but no longer the default headline figure since
 a bare Orit count isn't a useful thing for a human to read at a glance).
 
-EPOCH is the Dec 21, 2025 solstice, 15:02:51.231129 UTC -- Orit/Dattit/Annit
-zero -- carried over verbatim from the janus-units skill rather than
-re-derived. CHRONIT_SECONDS is likewise the exact constant from that skill.
+EPOCH is proleptic Gregorian April 1, AD 33, 12:15:00 UTC -- the
+Humphreys-Waddington crucifixion date (Julian April 3, 14:15 Jerusalem
+local time) converted to UTC. This is the canonical Civilization epoch
+per the cca skillset (janus-units/scripts/). CHRONIT_SECONDS is the
+exact constant from that same skillset.
 
 Annit, Hemerit, and Solit all require real solstice/equinox/solar-transit
 data, so all three depend on the `ephem` package. If ephem isn't installed,
@@ -97,7 +99,7 @@ from datetime import datetime, timezone, timedelta
 
 from janus_notation import janus_notation, janus_integer, janus_mantissa_fixed
 
-EPOCH = datetime(2025, 12, 21, 15, 2, 51, 231129, tzinfo=timezone.utc)
+EPOCH = datetime(33, 4, 1, 12, 15, 0, tzinfo=timezone.utc)
 CHRONIT_SECONDS = 643391.816709006
 
 # The module's own default of 6 significant digits matches the temporal
