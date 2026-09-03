@@ -110,8 +110,10 @@ CHRONIT_SECONDS = 643391.816709006
 # instead (magnitude pinned at ①, 5 digits). See janus_clock_notation_spec.md.
 CONTINUOUS_SIG_DIGITS = 2
 
-DEFAULT_LAT = 39.9526
-DEFAULT_LON = -75.1652
+# R-0-Q4ETQXWDJD9 Observatory. Lokit: w3⑤④1④n14①②0
+# lon_torit 0.2129951132 * 360 = 76.678241° W; lat_torit 0.1104359568 * 360 = 39.756944° N
+DEFAULT_LAT = 39.756944
+DEFAULT_LON = -76.678241
 
 MONTHS = ["Capricorn", "Aquarius", "Pisces", "Aries", "Taurus", "Gemini",
           "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius"]
